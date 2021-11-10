@@ -267,3 +267,52 @@ Now let's try to deploy a new destination rule:app-name:
 $ oc apply -f ossm/ratings.yaml 
 Error from server (Forbidden): error when creating "ossm/ratings.yaml": destinationrules.networking.istio.io "ratings" is forbidden: exceeded quota: quota-ossm, requested: count/destinationrules.networking.istio.io=1, used: count/destinationrules.networking.istio.io=3, limited: count/destinationrules.networking.istio.io=3
 ----
+
+=== Cluster Resource Quota
+
+Now let's create a new quota but this time for several projects using the annotation of the requester of the project.
+
+NOTE: For this exercise we are going to use `redhat` as the requester since it is the user we are using. In your cluster replace `redhat` with your user
+
+[source, yaml]
+----
+apiVersion: quota.openshift.io/v1
+kind: ClusterResourceQuota
+metadata:
+  name: for-user
+spec:
+  quota:
+    hard:
+      pods: "10"
+  selector:
+    annotations:
+      openshift.io/requester: redhat
+----
+
+`oc apply -f quotas/cluster-resource-quota.yaml`
+
+To see if the quota is correctly applied and where, execute the following command:
+
+[source]
+----
+$ oc describe AppliedClusterResourceQuota
+Name:           for-user
+Created:        6 minutes ago
+Labels:         <none>
+Annotations:    kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"quota.openshift.io/v1","kind":"ClusterResourceQuota","metadata":{"annotations":{},"name":"for-user"},"spec":{"quota":{"hard":{"pods":"10"}},"selector":{"annotations":{"openshift.io/requester":"redhat"}}}}
+
+Namespace Selector: ["istio-system" "quotas-demo"]
+Label Selector: 
+AnnotationSelector: map[openshift.io/requester:redhat]
+Resource        Used    Hard
+--------        ----    ----
+pods            10      10
+----
+
+Right now there are 10 pods used from the 10 pods the user is permitted. So the quota is already filled.
+
+== Clean
+
+To clean the demo:
+
+`oc delete project quotas-demo`
