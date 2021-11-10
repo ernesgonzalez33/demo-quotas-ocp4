@@ -128,14 +128,15 @@ $ oc get events
 33s         Warning   FailedCreate        replicaset/sleep-no-resources-6db8bd95ff   (combined from similar events): Error creating: pods "sleep-no-resources-6db8bd95ff-n56s4" is forbidden: failed quota: compute-resources: must specify limits.cpu,limits.memory,requests.cpu,requests.memory
 ----
 
-Let's put some resources limits and requests:
+We can solve this by putting the requests and limits in the pod. But we are going to do it by using a LimitRange:
 
-[source]
-----
-oc set resources deployment/sleep-no-resources \
-   --limits=cpu=100m,memory=1Gi \
-   --requests=cpu=100m,memory=1Gi
-----
+`oc apply -f limits/limit-resources.yaml`
+
+Let's recreate the deployment:
+
+`oc delete -f sleep/sleep-no-resources.yaml`
+
+`oc apply -f sleep/sleep-no-resources.yaml`
 
 Now the pod is running:
 
@@ -151,6 +152,8 @@ Now let's clean the namespace:
 `oc delete deployment sleep-no-resources`
 
 `oc delete quota quota-resources`
+
+`oc delete limitrange limit-resources`
 
 === Ephemeral Storage
 
