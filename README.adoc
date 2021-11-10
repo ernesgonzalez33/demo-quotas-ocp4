@@ -149,4 +149,49 @@ sleep-no-resources-db844cf47-6kdvs   1/1     Running   0          4s
 Now let's clean the namespace:
 
 `oc delete deployment sleep-no-resources`
+
 `oc delete quota quota-resources`
+
+=== Ephemeral Storage
+
+You can also control the ephemeral storage with quotas:
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: storage-resources
+spec:
+  hard:
+    requests.ephemeral-storage: 10Mi
+    limits.ephemeral-storage: 20Mi
+----
+
+Let's deploy this quota and then and application that only writes to the ephemeral storage.
+
+IMPORTANT: This quota only works if the deployments also have a quota set themselves. Unlike the CPU and Memory quotas, when setting this, the deployments work without setting it explicitly but the quota won't get it.
+
+`oc apply -f quotas/quota-storage.yaml`
+
+`oc apply -f writing/writing.yaml`
+
+Check that the quota is working and the application is running:
+
+[source]
+----
+$ oc get quota
+NAME                AGE   REQUEST                                LIMIT
+storage-resources   27s   requests.ephemeral-storage: 1Mi/10Mi   limits.ephemeral-storage: 1Mi/20Mi
+$ oc get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+writing-deployment-5f6689949c-gzprv   1/1     Running   0          10s
+----
+
+The application is writing constantly to the ephemeral storage so check when it is going to be evicted with the following command: `oc get pods -w`
+
+After this, you can clean the exercise:
+
+`oc delete deployment writing-deployment`
+
+`oc delete quota quota-storage`
