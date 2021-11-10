@@ -2,7 +2,7 @@
 
 == Purpose
 
-The following demo has the purpose of showing how quotas work in an OpenShift 4 cluster.
+The following demo has the purpose of showing how quotas work in an OpenShift 4 cluster. This demo is based on the official OpenShift documentation. If you want to learn more, check the documentation here: https://docs.openshift.com/container-platform/4.9/applications/quotas/quotas-setting-per-project.html 
 
 == Prerequisites
 
@@ -77,3 +77,76 @@ $ oc get events
 Now, let's delete the deployment to continue with the next part of the demo:
 
 `oc delete deployment sleep-two-replicas`
+
+And delete the quota:
+
+`oc delete quota quota-pods`
+
+=== Compute Resources
+
+You can also limit some computing resources, such as CPU and Memory consumption inside a namespace. For example:
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-resources
+spec:
+  hard:
+    requests.cpu: "1" 
+    requests.memory: 1Gi 
+    limits.cpu: "2" 
+    limits.memory: 2Gi 
+----
+
+Let's apply the quota:
+
+`oc apply -f quotas/quota-resources.yaml`
+
+An important thing with these kind of quotas is that every application should ask for requests and limits to be able to be deployed. Let's try deploying an app without any request or limits:
+
+[source, bash]
+----
+$ oc apply -f sleep/sleep-no-resources.yaml 
+deployment.apps/sleep-no-resources created
+----
+
+The deployment is created. But are there any pods?
+
+[source]
+----
+$ oc get pods
+No resources found in quotas-demo namespace.
+----
+
+No pods. To see the error, we need to check the events:
+
+[source]
+----
+$ oc get events
+33s         Warning   FailedCreate        replicaset/sleep-no-resources-6db8bd95ff   (combined from similar events): Error creating: pods "sleep-no-resources-6db8bd95ff-n56s4" is forbidden: failed quota: compute-resources: must specify limits.cpu,limits.memory,requests.cpu,requests.memory
+----
+
+Let's put some resources limits and requests:
+
+[source]
+----
+oc set resources deployment/sleep-no-resources \
+   --limits=cpu=100m,memory=1Gi \
+   --requests=cpu=100m,memory=1Gi
+----
+
+Now the pod is running:
+
+[source]
+----
+$ oc get pods
+NAME                                 READY   STATUS    RESTARTS   AGE
+sleep-no-resources-db844cf47-6kdvs   1/1     Running   0          4s
+----
+
+Now let's clean the namespace:
+
+`oc delete deployment sleep-no-resources`
+`oc delete quota quota-resources`
