@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-ossm
+spec:
+  hard:
+    count/destinationrules.networking.istio.io: 3
+    count/virtualservices.networking.istio.io: 1

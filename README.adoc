@@ -195,3 +195,75 @@ After this, you can clean the exercise:
 `oc delete deployment writing-deployment`
 
 `oc delete quota quota-storage`
+
+=== Custom Resources
+
+You can also use quotas to limit the number of Custom Resources. In this case we are going to use the Custom Resources from OpenShift Service Mesh. First of all, let's add our namespace to the Service Mesh:
+
+[source]
+----
+oc apply -f ossm/smm.yaml
+----
+
+Check that is ready:
+
+[source]
+----
+$ oc get smm
+NAME      CONTROL PLANE        READY   AGE
+default   istio-system/basic   True    7s
+----
+
+Now let's deploy bookinfo in our namespace:
+
+[source]
+----
+oc apply -f ossm/bookinfo.yaml
+----
+
+Wait for all the pods to be ready:
+
+[source]
+----
+$ oc get pods
+NAME                              READY   STATUS    RESTARTS   AGE
+details-v1-5bc5947d84-hdm7l       2/2     Running   0          44s
+productpage-v1-6fc77ff794-62k2v   2/2     Running   0          43s
+reviews-v1-868597db96-gh7s8       2/2     Running   0          44s
+----
+
+Now let's create a quota with only one virtual service and three destination rules:
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-ossm
+spec:
+  hard:
+    count/destinationrules.networking.istio.io: 3
+    count/virtualservices.networking.istio.io: 1
+----
+
+[source]
+----
+oc apply -f quotas/quota-ossm.yaml
+----
+
+Let's check the quota:
+
+[source]
+----
+oc get quota
+NAME         AGE   REQUEST                                                                                           LIMIT
+quota-ossm   55m   count/destinationrules.networking.istio.io: 3/3, count/virtualservices.networking.istio.io: 1/1   
+----
+
+Now let's try to deploy a new destination rule:app-name:
+
+[source]
+----
+$ oc apply -f ossm/ratings.yaml 
+Error from server (Forbidden): error when creating "ossm/ratings.yaml": destinationrules.networking.istio.io "ratings" is forbidden: exceeded quota: quota-ossm, requested: count/destinationrules.networking.istio.io=1, used: count/destinationrules.networking.istio.io=3, limited: count/destinationrules.networking.istio.io=3
+----
