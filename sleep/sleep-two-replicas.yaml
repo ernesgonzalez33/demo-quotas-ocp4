@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep-two-replicas
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ubi
+  template:
+    metadata:
+      labels:
+        app: ubi
+    spec:
+      containers:
+      - name: ubi
+        image: registry.redhat.io/ubi8/ubi:latest
+        command: ["sleep", "infinity"]
+        imagePullPolicy: IfNotPresent

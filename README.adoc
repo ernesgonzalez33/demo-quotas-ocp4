@@ -1,1 +1,79 @@
 = OpenShift 4.x Quotas demo
+
+== Purpose
+
+The following demo has the purpose of showing how quotas work in an OpenShift 4 cluster.
+
+== Prerequisites
+
+* Access to an OpenShift 4.x cluster 
+* OpenShift Service Mesh installed
+
+== Demo
+
+Create the project to use for the demo:
+
+`oc new-project quotas-demo`
+
+=== Pods
+
+You can set a quota with the number of pods you want to limit. As the following that only permits one pod
+
+[source, yaml]
+----
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota-pods
+spec:
+  hard:
+    pods: "1" 
+----
+
+Apply it to your project:
+
+`oc apply -f quotas/quota-pods.yaml`
+
+See the quota:
+
+[source, bash]
+----
+$ oc get quota
+NAME         AGE   REQUEST     LIMIT
+quota-pods   3s    pods: 0/1 
+----
+
+Now let's try to deploy an app with two replicas:
+
+`oc apply -f sleep/sleep-two-replicas.yaml`
+
+Let's see how many pods there are:
+
+[source, bash]
+----
+$ oc get pods
+NAME                                  READY   STATUS    RESTARTS   AGE
+sleep-two-replicas-6db8bd95ff-c5jj8   1/1     Running   0          26s
+----
+
+Only one. Let's check the deployment:
+
+[source, bash]
+----
+$ oc get deployment
+NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
+sleep-two-replicas   1/2     1            1           78s
+----
+
+The quota is working correctly. To see the error we have to check the events:
+
+[source, bash]
+----
+$ oc get events
+[truncated]
+3m38s       Warning   FailedCreate        replicaset/ubi-best-effort-6db8bd95ff      (combined from similar events): Error creating: pods "ubi-best-effort-6db8bd95ff-ggns6" is forbidden: exceeded quota: quota-pods, requested: pods=1, used: pods=1, limited: pods=1
+----
+
+Now, let's delete the deployment to continue with the next part of the demo:
+
+`oc delete deployment sleep-two-replicas`
