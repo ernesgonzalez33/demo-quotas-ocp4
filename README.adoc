@@ -319,3 +319,4 @@ Right now there are 10 pods used from the 10 pods the user is permitted. So the 
 To clean the demo:
 
 `oc delete project quotas-demo`
+`oc delete -f quotas/cluster-resource-quota.yaml`
